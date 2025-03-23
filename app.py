@@ -2,7 +2,7 @@ import streamlit as st
 import time
 from app.components.form import render_travel_form
 from app.components.results import render_loading_state, render_travel_plans
-from app.services.langchain_service import TravelPlannerService
+from app.services.langgraph_service import TravelPlannerWorkflow
 from app.utils.env_loader import load_env_variables
 
 # ページ設定
@@ -33,9 +33,9 @@ env_vars = load_env_variables()
 
 
 @st.cache_resource
-def get_travel_planner_service():
-    """TravelPlannerServiceのインスタンスを作成してキャッシュする"""
-    return TravelPlannerService(
+def get_travel_planner_workflow():
+    """TravelPlannerWorkflowのインスタンスを作成してキャッシュする"""
+    return TravelPlannerWorkflow(
         openai_api_key=env_vars.get("OPENAI_API_KEY"),
         serpapi_key=env_vars.get("SERPAPI_API_KEY"),
     )
@@ -50,7 +50,7 @@ def main():
         st.title("🏯 日本旅行プランナー")
         st.markdown(
             """
-        このアプリは、LangChainとOpenAI APIを使用して、日本国内の旅行プランを提案します。
+        このアプリは、LangGraphとOpenAI APIを使用して、日本国内の旅行プランを提案します。
         
         あなたの条件に合わせたオリジナルの旅行プランを生成します。
         """
@@ -64,6 +64,29 @@ def main():
         3. AIが条件に合った旅行プランを提案
         """
         )
+
+        # ワークフロー図を表示
+        with st.expander("ワークフロー図"):
+            st.markdown(
+                """
+            ```mermaid
+            graph TD
+                A[開始] --> B{情報収集が必要?}
+                B -->|はい| C[リサーチ]
+                B -->|いいえ| D[プラン生成]
+                C --> E{リサーチ成功?}
+                E -->|はい| D
+                E -->|いいえ| F[エラー処理]
+                D --> G{プラン生成成功?}
+                G -->|はい| H[追加情報]
+                G -->|いいえ| F
+                H --> I{追加情報成功?}
+                I -->|はい| J[終了]
+                I -->|いいえ| F
+                F --> J
+            ```
+            """
+            )
 
         st.caption("© 2023 日本旅行プランナー")
 
@@ -85,10 +108,10 @@ def main():
         render_loading_state()
 
         try:
-            # 旅行プランナーサービスの取得
-            travel_planner = get_travel_planner_service()
+            # 旅行プランナーワークフローの取得
+            travel_planner = get_travel_planner_workflow()
 
-            # 旅行プランの生成
+            # LangGraphワークフローを実行して旅行プランの生成
             result = travel_planner.generate_travel_plans(
                 current_location=form_data["current_location"],
                 destination=form_data["destination"],
