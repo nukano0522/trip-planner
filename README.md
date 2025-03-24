@@ -12,6 +12,7 @@ LangGraphとOpenAI APIを使用して、日本国内の旅行プランを提案�
 - Wikipedia、Google Search、Google Map等の各種APIを利用した情報収集
 - OpenAI APIを使用した自然な旅行プランの生成
 - 使いやすいStreamlitインターフェース
+- LangSmithを使用した実行トレースの可視化（オプション）
 
 ## セットアップ方法
 
@@ -62,7 +63,16 @@ GOOGLE_CSE_ID=your_google_cse_id
 
 # SerpApi
 SERPAPI_API_KEY=your_serpapi_api_key
-```
+
+# LangSmithの設定（オプション）
+LANGSMITH_API_KEY=your_langsmith_api_key
+LANGSMITH_TRACING_V2=true
+LANGSMITH_PROJECT=trip-planner-japan
+
+# LangSmithのトレーシング方式の選択
+# true: @traceableデコレータを使用
+# false: langgraphワークフローのトレーシングを使用
+USE_TRACEABLE=true
 
 ### 実行方法
 
@@ -120,3 +130,18 @@ graph TD
 ## ライセンス
 
 このプロジェクトはMITライセンスの下で公開されています。 
+
+## LangSmithトレーシング
+
+このアプリケーションは2つのLangSmithトレーシング方式をサポートしています：
+
+1. **LangGraphワークフロー方式**（従来）：
+   - 複雑なLangGraphワークフローのトレースを可視化
+   - `.env`ファイルで設定：`USE_TRACEABLE=false`
+
+2. **@traceableデコレータ方式**（新方式）：
+   - 関数単位でのトレースを可視化
+   - より詳細な関数実行の追跡が可能
+   - `.env`ファイルで設定：`USE_TRACEABLE=true`
+
+どちらの方式も、LangSmithダッシュボードで詳細なトレースを確認できます。 

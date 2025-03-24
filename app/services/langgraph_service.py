@@ -1,13 +1,18 @@
 from typing import Dict, List, Any, TypedDict, Annotated, Literal
 from enum import Enum
+import os
+import uuid
 
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from langchain_community.utilities import WikipediaAPIWrapper
 from langchain_community.utilities import SerpAPIWrapper
+from langchain.callbacks.tracers import LangChainTracer
+from langchain.callbacks.tracers.langchain import wait_for_all_tracers
 
 from langgraph.graph import StateGraph, END, START
+from langgraph.checkpoint.base import BaseCheckpointSaver
 
 
 # ステート（状態）の型定義
@@ -41,9 +46,18 @@ class TravelPlannerWorkflow:
         self.openai_api_key = openai_api_key
         self.serpapi_key = serpapi_key
 
+        # トレーシング設定
+        self.project_name = os.getenv("LANGSMITH_PROJECT", "trip-planner-japan")
+        self.tracing_enabled = (
+            os.getenv("LANGSMITH_TRACING_V2", "false").lower() == "true"
+        )
+        self.run_id = str(uuid.uuid4())
+
         # 各ステップで使用するLLMを初期化
         self.llm = ChatOpenAI(
-            temperature=0.7, model_name="gpt-3.5-turbo", openai_api_key=openai_api_key
+            temperature=0.7,
+            model_name=os.getenv("OPENAI_MODEL"),
+            openai_api_key=openai_api_key,
         )
 
         # 検索用のインスタンスを作成
@@ -75,7 +89,7 @@ class TravelPlannerWorkflow:
 
             # SerpAPIキーがある場合はWeb検索も実行
             if self.serpapi_wrapper:
-                web_query = f"{destination} 観光 おすすめ スポット 2023"
+                web_query = f"{destination} 観光 おすすめ スポット 2024"
                 web_result = self.serpapi_wrapper.run(web_query)
                 research_results["web_search"] = web_result
 
@@ -288,6 +302,16 @@ class TravelPlannerWorkflow:
 
         workflow.add_edge(TravelPlanningNodes.ERROR_HANDLER, END)
 
+        # LangSmithチェックポインターの初期化
+        checkpointer = None
+        if self.tracing_enabled:
+            try:
+                # 最新のlanggraphバージョンではチェックポインター実装が変わりました
+                # 直接コンパイルし、LangSmith統合は設定済み環境変数を使用します
+                pass
+            except Exception as e:
+                print(f"LangSmithトレーサーの初期化エラー: {e}")
+
         # グラフをコンパイル
         return workflow.compile()
 
@@ -301,6 +325,19 @@ class TravelPlannerWorkflow:
     ) -> Dict[str, str]:
         """旅行プランを生成する"""
         try:
+            # 実行IDを更新
+            self.run_id = str(uuid.uuid4())
+
+            # LangChainトレーサーの初期化
+            tracer = None
+            if self.tracing_enabled:
+                try:
+                    tracer = LangChainTracer(
+                        project_name=self.project_name, run_id=self.run_id
+                    )
+                except Exception as e:
+                    print(f"LangChainトレーサーの初期化エラー: {e}")
+
             # 初期状態を設定
             initial_state = TravelPlanningState(
                 current_location=current_location,
@@ -317,12 +354,28 @@ class TravelPlannerWorkflow:
             )
 
             # ワークフローを実行
-            final_state = self.workflow.invoke(initial_state)
+            callbacks = [tracer] if tracer else None
+            final_state = self.workflow.invoke(
+                initial_state, config={"callbacks": callbacks}
+            )
+
+            # トレーシングの完了を待機
+            if self.tracing_enabled:
+                wait_for_all_tracers()
 
             # 結果を返す
-            return {
+            result = {
                 "travel_plans": final_state["travel_plan"],
                 "additional_info": final_state["additional_info"],
             }
+
+            # トレーシング情報も追加
+            if self.tracing_enabled:
+                result["trace_url"] = (
+                    f"https://smith.langchain.com/traces/{self.run_id}"
+                )
+                result["run_id"] = self.run_id
+
+            return result
         except Exception as e:
             return {"error": f"旅行プランの生成中にエラーが発生しました: {str(e)}"}
