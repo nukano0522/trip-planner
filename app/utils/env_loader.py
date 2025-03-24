@@ -12,6 +12,10 @@ def load_env_variables():
         "GOOGLE_API_KEY",
         "GOOGLE_CSE_ID",
         "SERPAPI_API_KEY",
+        "LANGSMITH_API_KEY",
+        "LANGSMITH_PROJECT",
+        "LANGSMITH_TRACING_V2",
+        "OPENAI_MODEL",
     ]
 
     missing_vars = [var for var in required_vars if not os.getenv(var)]
