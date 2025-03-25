@@ -478,6 +478,9 @@ class TravelPlannerWorkflow:
                     logger.info(
                         f"LangChainトレーサー初期化完了: プロジェクト={self.project_name}"
                     )
+                    logger.info(
+                        f"LangChainトレーサー初期化完了: プロジェクト={self.project_name}"
+                    )
                 except Exception as e:
                     logger.error(f"LangChainトレーサーの初期化エラー: {e}")
 
