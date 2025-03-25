@@ -13,31 +13,7 @@ logging.basicConfig(
     ],
 )
 logger = logging.getLogger("RAGKnowledgeBase")
-<<<<<<< HEAD
 from langchain_community.vectorstores import FAISS
-
-# faissのインポートをtry-exceptで囲む
-# try:
-#     from langchain_community.vectorstores import FAISS
-
-#     FAISS_AVAILABLE = True
-#     logger.info("FAISSのインポートに成功しました")
-# except ImportError:
-#     FAISS_AVAILABLE = False
-#     logger.warning("FAISSのインポートに失敗しました。代替手段を使用します")
-=======
-
-# faissのインポートをtry-exceptで囲む
-try:
-    from langchain_community.vectorstores import FAISS
-
-    FAISS_AVAILABLE = True
-    logger.info("FAISSのインポートに成功しました")
-except ImportError:
-    FAISS_AVAILABLE = False
-    logger.warning("FAISSのインポートに失敗しました。代替手段を使用します")
->>>>>>> 89c3b3f5e33be25a056ccfae85482bd281ff1628
-
 from langchain_community.vectorstores import DocArrayInMemorySearch
 from langchain_community.document_loaders import TextLoader, DirectoryLoader
 from langchain_community.embeddings import HuggingFaceEmbeddings
@@ -160,40 +136,11 @@ class RAGKnowledgeBase:
                 logger.info(f"テキスト分割完了: {len(chunks)}チャンク")
 
                 # ベクトルストアの作成
-<<<<<<< HEAD
                 self.vector_store = FAISS.from_documents(chunks, self.embeddings)
                 logger.info(
                     f"FAISSベクトルストア初期化完了: {len(chunks)}チャンクを登録"
                 )
 
-=======
-                if FAISS_AVAILABLE:
-                    logger.info("FAISSベクトルストアを作成中...")
-                    try:
-                        self.vector_store = FAISS.from_documents(
-                            chunks, self.embeddings
-                        )
-                        logger.info(
-                            f"FAISSベクトルストア初期化完了: {len(chunks)}チャンクを登録"
-                        )
-                    except Exception as e:
-                        logger.error(f"FAISSベクトルストア作成エラー: {e}")
-                        logger.info("代替のDocArrayInMemorySearchベクトルストアを使用")
-                        self.vector_store = DocArrayInMemorySearch.from_documents(
-                            chunks, self.embeddings
-                        )
-                        logger.info(
-                            f"DocArrayInMemorySearchベクトルストア初期化完了: {len(chunks)}チャンクを登録"
-                        )
-                else:
-                    logger.info("DocArrayInMemorySearchベクトルストアを作成中...")
-                    self.vector_store = DocArrayInMemorySearch.from_documents(
-                        chunks, self.embeddings
-                    )
-                    logger.info(
-                        f"DocArrayInMemorySearchベクトルストア初期化完了: {len(chunks)}チャンクを登録"
-                    )
->>>>>>> 89c3b3f5e33be25a056ccfae85482bd281ff1628
             else:
                 logger.warning(
                     "警告: ナレッジベースにマークダウンファイルが見つかりません"

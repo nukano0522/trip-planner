@@ -526,13 +526,6 @@ class TravelPlannerWorkflow:
                 logger.error(f"最終状態にエラーあり: {final_state['error']}")
                 result["error"] = final_state["error"]
 
-            # トレーシング情報も追加
-            # if self.tracing_enabled:
-            # trace_url = f"https://smith.langchain.com/traces/{self.run_id}"
-            # result["trace_url"] = trace_url
-            # result["run_id"] = self.run_id
-            # logger.info(f"トレースURL: {trace_url}")
-
             logger.info("旅行プラン生成完了")
             return result
         except Exception as e:
